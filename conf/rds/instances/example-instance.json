@@ -1,0 +1,7 @@
+{
+  "port": 3306,
+  "type": "t2.micro", // one of the rds instance types
+  "private-ip-address": null, // if not set, one is picked from the subnet by AWS
+  "service": "mysql", // accepted values are: 'mysql', 'mariadb', 'sql server', 'postgresql', or 'amazon aurora'
+  "username": "cumulus"
+}
