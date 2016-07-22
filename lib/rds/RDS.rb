@@ -11,7 +11,7 @@ module Cumulus
       end
 
       def named_instances
-        Hash[instances.map { |instance| [instance.name, instance] }]
+        Hash[instances.map { |instance| [instance[:db_instance_identifier], instance] }]
       end
 
       private
