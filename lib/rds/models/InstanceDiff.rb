@@ -16,7 +16,6 @@ module Cumulus
       DATABASE = Common::DiffChange.next_change_id
       PUBLIC = Common::DiffChange.next_change_id
       BACKUP = Common::DiffChange.next_change_id
-      MONITORING = Common::DiffChange.next_change_id
       UPGRADE = Common::DiffChange.next_change_id
     end
 
@@ -40,7 +39,6 @@ module Cumulus
         when DATABASE then "Database Name"
         when PUBLIC then "Public Facing"
         when BACKUP then "Backup"
-        when MONITORING then "Monitoring"
         when UPGRADE then "Upgrade"
         else
           "RDS Instance"

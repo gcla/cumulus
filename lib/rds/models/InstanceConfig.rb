@@ -4,7 +4,7 @@ require "rds/models/InstanceDiff"
 module Cumulus
   module RDS
     class InstanceConfig
-      attr_reader :name, :port, :type, :engine, :engine_version, :storage_type, :storage_size, :master_username, :security_groups, :subnet, :database, :public_facing, :backup_period, :backup_window, :enhanced_monitoring, :auto_upgrade, :upgrade_window
+      attr_reader :name, :port, :type, :engine, :engine_version, :storage_type, :storage_size, :master_username, :security_groups, :subnet, :database, :public_facing, :backup_period, :backup_window, :auto_upgrade, :upgrade_window
 
       def initialize(name, json = nil)
         @name = name
@@ -21,10 +21,9 @@ module Cumulus
           @database = json["database"]
           @public_facing = json["public"]
           @backup_period = json["backup_period"]
-          @backup_window = json["buckup_window"]
-          @enhanced_monitoring = json["enhanced_monitoring"]
+          @backup_window = json["backup_window"]
           @auto_upgrade = json["auto_upgrade"]
-          @upgrade_window = json["upgrade_window"]
+          @upgrade_window = json["upgrade_window"].downcase
         end
       end
 
@@ -42,8 +41,7 @@ module Cumulus
           "database" => @database,
           "public" => @public_facing,
           "backup_period" => @backup_period,
-          "buckup_window" => @backup_window,
-          "enhanced_monitoring" => @enhanced_monitoring,
+          "backup_window" => @backup_window,
           "auto_upgrade" => @auto_upgrade,
           "upgrade_window" => @upgrade_window,
         }
@@ -63,9 +61,8 @@ module Cumulus
         @public_facing = aws_instance[:publicly_accessible]
         @backup_period = aws_instance[:backup_retention_period]
         @backup_window = aws_instance[:preferred_backup_window]
-        @enhanced_monitoring = !aws_instance[:enhanced_monitoring_resource_arn].nil? # TODO: test with monitoring enabled
         @auto_upgrade = aws_instance[:auto_minor_version_upgrade]
-        @upgrade_window = aws_instance[:preferred_backup_window]
+        @upgrade_window = aws_instance[:preferred_maintenance_window]
         self # return the instanceconfig
       end
 
@@ -122,10 +119,6 @@ module Cumulus
 
         if aws.backup_window != @backup_window
           diffs << InstanceDiff.new(InstanceChange::BACKUP, aws.backup_window, @backup_window)
-        end
-
-        if aws.enhanced_monitoring != @enhanced_monitoring
-          diffs << InstanceDiff.new(InstanceChange::MONITORING, aws.enhanced_monitoring, @enhanced_monitoring)
         end
 
         if aws.auto_upgrade != @auto_upgrade

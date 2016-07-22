@@ -5,7 +5,7 @@
   "engine_version": "5.6.27",
   "storage_type": "gp2",
   "storage_size": 5,
-  "master_username": null,
+  "master_username": "cumulus",
   "security-groups": [
 
   ],
@@ -13,8 +13,7 @@
   "database": "mydb",
   "public": false,
   "backup_period": 7,
-  "buckup_window": null,
-  "enhanced_monitoring": false,
+  "backup_window": "02:27-02:57",
   "auto_upgrade": true,
-  "upgrade_window": "03:27-03:57"
+  "upgrade_window": "mon:03:27-mon:03:57"
 }
