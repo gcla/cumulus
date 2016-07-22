@@ -1,6 +1,7 @@
 require "rds/RDS"
 require "rds/loader/Loader"
 require "common/manager/Manager"
+require "rds/models/InstanceDiff"
 
 module Cumulus
   module RDS
@@ -17,6 +18,15 @@ module Cumulus
         @aws_resources ||= RDS::named_instances
       end
 
+      def unmanaged_diff(aws)
+        InstanceDiff.unmanaged(aws)
+      end
+
+      def diff_resource(local, aws)
+        puts Colors.blue("Processing #{local.name}...")
+        cumulus_version = InstanceConfig.new(local.name).populate!(aws)
+        local.diff(cumulus_version)
+      end
 
       def migrate
         puts Colors.blue("Will migrate #{RDS.instances.length} instances")

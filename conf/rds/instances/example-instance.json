@@ -1,28 +1,20 @@
 {
   "port": 3306,
-  "type": "t2.micro", // one of the rds instance types
-  "engine": "mysql", // accepted values are: 'mysql', 'mariadb', 'sql server', 'postgresql', or 'amazon aurora'
+  "type": "t2.micro",
+  "engine": "mysql",
   "engine_version": "5.6.27",
-  "storage_type": "general", // accepted values are: 'magnetic', 'general', 'provisioned'
-  "storage_size": 5, // measured in GB
-  "master_username": "cumulus",
-  "master_password": "i_love_cumulus",
-  "security-groups":[
+  "storage_type": "gp2",
+  "storage_size": 5,
+  "master_username": null,
+  "security-groups": [
 
   ],
-  "subnet": "",
+  "subnet": "default",
   "database": "mydb",
   "public": false,
-  "backup_period": 7, // backup retention period in days
-  "backup_window": {
-    "start": 700,
-    "duration": 0.5
-  },
+  "backup_period": 7,
+  "buckup_window": null,
   "enhanced_monitoring": false,
   "auto_upgrade": true,
-  "upgrade_window": {
-    "day": 1, // day of the week. accepted values are 1 (monday) through 7 (sunday)
-    "start": 700,
-    "duration": 0.5
-  }
+  "upgrade_window": "03:27-03:57"
 }

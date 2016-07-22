@@ -1,7 +1,10 @@
+require "security/SecurityGroups"
+require "rds/models/InstanceDiff"
+
 module Cumulus
   module RDS
     class InstanceConfig
-      attr_reader :name, :port, :type, :engine, :engine_version, :storage_type, :storage_size, :master_username, :security_groups, :subnet, :database, :public, :backup_period, :buckup_window, :enhanced_monitoring, :auto_upgrade, :upgrade_window
+      attr_reader :name, :port, :type, :engine, :engine_version, :storage_type, :storage_size, :master_username, :security_groups, :subnet, :database, :public_facing, :backup_period, :backup_window, :enhanced_monitoring, :auto_upgrade, :upgrade_window
 
       def initialize(name, json = nil)
         @name = name
@@ -16,7 +19,7 @@ module Cumulus
           @security_groups = json["security-groups"]
           @subnet = json["subnet"]
           @database = json["database"]
-          @public = json["public"]
+          @public_facing = json["public"]
           @backup_period = json["backup_period"]
           @backup_window = json["buckup_window"]
           @enhanced_monitoring = json["enhanced_monitoring"]
@@ -33,13 +36,13 @@ module Cumulus
           "engine_version" => @engine_version,
           "storage_type" => @storage_type,
           "storage_size" => @storage_size,
-          "master_username" => @username,
+          "master_username" => @master_username,
           "security-groups" => @security_groups,
           "subnet" => @subnet,
           "database" => @database,
-          "public" => @public,
+          "public" => @public_facing,
           "backup_period" => @backup_period,
-          "buckup_window" => @buckup_window,
+          "buckup_window" => @backup_window,
           "enhanced_monitoring" => @enhanced_monitoring,
           "auto_upgrade" => @auto_upgrade,
           "upgrade_window" => @upgrade_window,
@@ -51,19 +54,89 @@ module Cumulus
         @type = aws_instance[:db_instance_class].reverse.chomp("db.".reverse).reverse # remove the 'db.' that prefixes the string
         @engine = aws_instance[:engine]
         @engine_version = aws_instance[:engine_version]
-        @storage_type = aws_instance[:storage_type] # 'gp2'
+        @storage_type = aws_instance[:storage_type]
         @storage_size = aws_instance[:allocated_storage]
         @master_username = aws_instance[:master_username]
-        @security_groups = aws_instance[:db_security_groups] # an array. TODO: need to verify elements
-        @subnet = nil#aws_instance[:db_subnet_group] # TODO: another struct inside this one
+        @security_groups = aws_instance[:db_security_groups].map(&:group_id).map { |id| SecurityGroups::id_security_groups[id].group_name }.sort
+        @subnet = aws_instance[:db_subnet_group][:db_subnet_group_name]
         @database = aws_instance[:db_name]
-        @public = aws_instance[:publicly_accessible]
+        @public_facing = aws_instance[:publicly_accessible]
         @backup_period = aws_instance[:backup_retention_period]
         @backup_window = aws_instance[:preferred_backup_window]
-        @enhanced_monitoring = aws_instance[:enhanced_monitoring_resource_arn] # TODO: what does this return
+        @enhanced_monitoring = !aws_instance[:enhanced_monitoring_resource_arn].nil? # TODO: test with monitoring enabled
         @auto_upgrade = aws_instance[:auto_minor_version_upgrade]
         @upgrade_window = aws_instance[:preferred_backup_window]
         self # return the instanceconfig
+      end
+
+      def diff(aws)
+        diffs = Array.new
+
+        if aws.port != @port
+          diffs << InstanceDiff.new(InstanceChange::PORT, aws.port, @port)
+        end
+
+        if aws.type != @type
+          diffs << InstanceDiff.new(InstanceChange::TYPE, aws.type, @type)
+        end
+
+        if aws.engine != @engine
+          diffs << InstanceDiff.new(InstanceChange::ENGINE, aws.engine, @engine)
+        end
+
+        if aws.engine_version != @engine_version
+          diffs << InstanceDiff.new(InstanceChange::ENGINE, aws.engine_version, @engine_version)
+        end
+
+        if aws.storage_type != @storage_type
+          diffs << InstanceDiff.new(InstanceChange::STORAGE, aws.storage_type, @storage_type)
+        end
+
+        if aws.storage_size != @storage_size
+          diffs << InstanceDiff.new(InstanceChange::STORAGE, aws.storage_size, @storage_size)
+        end
+
+        if aws.master_username != @master_username
+          diffs << InstanceDiff.new(InstanceChange::USERNAME, aws.master_username, @master_username)
+        end
+
+        if aws.security_groups != @security_groups
+          diffs << InstanceDiff.new(InstanceChange::SECURITY_GROUPS, aws.security_groups, @security_groups)
+        end
+
+        if aws.subnet != @subnet
+          diffs << InstanceDiff.new(InstanceChange::SUBNET, aws.subnet, @subnet)
+        end
+
+        if aws.database != @database
+          diffs << InstanceDiff.new(InstanceChange::DATABASE, aws.database, @database)
+        end
+
+        if aws.public_facing != @public_facing
+          diffs << InstanceDiff.new(InstanceChange::PUBLIC, aws.public_facing, @public_facing)
+        end
+
+        if aws.backup_period != @backup_period
+          diffs << InstanceDiff.new(InstanceChange::BACKUP, aws.backup_period, @backup_period)
+        end
+
+        if aws.backup_window != @backup_window
+          diffs << InstanceDiff.new(InstanceChange::BACKUP, aws.backup_window, @backup_window)
+        end
+
+        if aws.enhanced_monitoring != @enhanced_monitoring
+          diffs << InstanceDiff.new(InstanceChange::MONITORING, aws.enhanced_monitoring, @enhanced_monitoring)
+        end
+
+        if aws.auto_upgrade != @auto_upgrade
+          diffs << InstanceDiff.new(InstanceChange::UPGRADE, aws.auto_upgrade, @auto_upgrade)
+        end
+
+        if aws.upgrade_window != @upgrade_window
+          diffs << InstanceDiff.new(InstanceChange::UPGRADE, aws.upgrade_window, @upgrade_window)
+        end
+
+        diffs
       end
 
     end
